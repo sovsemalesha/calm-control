@@ -7,11 +7,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      manifestFilename: "manifest.webmanifest",
+
+      // ✅ В dev включаем PWA, но без precache-сканирования файлов (оно и даёт warning)
       devOptions: {
         enabled: true,
-        // полезно для теста: SW включен в dev на localhost
-        type: "module",
       },
+
+      // ✅ Важно: отключаем workbox precache именно в dev
+      workbox: {
+        globPatterns: [], // <— ключевая строка: убирает предупреждение
+      },
+
       manifest: {
         name: "calm-control",
         short_name: "calm-control",
@@ -27,7 +34,6 @@ export default defineConfig({
           { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
-      // ✅ Убираем workbox.globPatterns — именно он даёт warning в dev
     }),
   ],
 });
