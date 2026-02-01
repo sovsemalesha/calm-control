@@ -138,38 +138,23 @@ export function ChatPanel({
     };
   }, [visible, activeChatId]);
 
-  const doSaveName = async () => {
-    const v = nameDraft.trim();
-    if (!v) return;
+const doSaveName = async () => {
+  const v = nameDraft.trim();
+  if (!v) return;
 
-    setSavingName(true);
-    setErr(null);
+  setSavingName(true);
+  setErr(null);
 
-    setMeName(v);
-    setNameDraft(v);
-
-    try {
-      await setMyFullName(v);
-      try {
-        const full = await getMyFullName();
-        setMeName(full);
-        setNameDraft(full);
-      } catch {
-        // ignore
-      }
-    } catch (e: any) {
-      setErr(e?.message ?? "Ошибка");
-      try {
-        const full = await getMyFullName();
-        setMeName(full);
-        setNameDraft(full);
-      } catch {
-        // ignore
-      }
-    } finally {
-      setSavingName(false);
-    }
-  };
+  try {
+    const saved = await setMyFullName(v);
+    setMeName(saved);
+    setNameDraft(saved);
+  } catch (e: any) {
+    setErr(e?.message ?? "Ошибка");
+  } finally {
+    setSavingName(false);
+  }
+};
 
   const doAddContact = async () => {
     const e = addEmailDraft.trim();

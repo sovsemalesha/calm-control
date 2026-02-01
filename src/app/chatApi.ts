@@ -20,10 +20,6 @@ export type MessageRow = {
   created_at: string;
 };
 
-function pairKey(a: string, b: string): { user_a: string; user_b: string } {
-  return a < b ? { user_a: a, user_b: b } : { user_a: b, user_b: a };
-}
-
 export async function getMyUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
@@ -34,17 +30,46 @@ export async function getMyUserId(): Promise<string> {
 
 export async function getMyFullName(): Promise<string> {
   const me = await getMyUserId();
-  const { data, error } = await supabase.from("profiles").select("full_name").eq("id", me).maybeSingle();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", me)
+    .maybeSingle();
+
   if (error) throw error;
   return (data?.full_name ?? "") as string;
 }
 
-export async function setMyFullName(fullName: string): Promise<void> {
+/**
+ * ✅ Диагностическая версия:
+ * - делает upsert
+ * - СРАЗУ возвращает, что реально записалось в БД
+ * - если не записалось — кидает понятную ошибку
+ */
+export async function setMyFullName(fullName: string): Promise<string> {
   const me = await getMyUserId();
   const v = fullName.trim();
   if (!v) throw new Error("Пустое имя");
-  const { error } = await supabase.from("profiles").update({ full_name: v }).eq("id", me);
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert({ id: me, full_name: v }, { onConflict: "id" })
+    .select("full_name")
+    .maybeSingle();
+
   if (error) throw error;
+
+  const saved = (data?.full_name ?? "") as string;
+
+  if (saved.trim() !== v) {
+    // Это ключевой сигнал: upsert не записал то, что должен
+    // Значит либо таблица/колонка не та, либо есть триггер/правило, которое затирает значение
+    throw new Error(
+      `Имя не сохранилось в БД. Ожидал "${v}", получил "${saved || "(пусто)"}".`
+    );
+  }
+
+  return saved;
 }
 
 // Поиск пользователя по email через RPC (без раскрытия email всем)
@@ -75,7 +100,6 @@ export async function listMyContacts(): Promise<PublicProfile[]> {
   const ids = (rows ?? []).map((r: any) => r.contact_user_id).filter(Boolean);
   if (ids.length === 0) return [];
 
-  // profiles_public (view): id + full_name
   const { data: profiles, error: e2 } = await supabase
     .from("profiles_public")
     .select("id,full_name")
@@ -108,7 +132,12 @@ export async function addContactByEmail(email: string): Promise<PublicProfile> {
 
 export async function removeContact(contactUserId: string): Promise<void> {
   const me = await getMyUserId();
-  const { error } = await supabase.from("contacts").delete().eq("owner_id", me).eq("contact_user_id", contactUserId);
+  const { error } = await supabase
+    .from("contacts")
+    .delete()
+    .eq("owner_id", me)
+    .eq("contact_user_id", contactUserId);
+
   if (error) throw error;
 }
 
@@ -116,13 +145,14 @@ export async function getOrCreateDmChat(otherUserId: string): Promise<string> {
   const me = await getMyUserId();
   if (me === otherUserId) throw new Error("Нельзя чат с самим собой");
 
-  const { user_a, user_b } = pairKey(me, otherUserId);
+  const a = me < otherUserId ? me : otherUserId;
+  const b = me < otherUserId ? otherUserId : me;
 
   const { data: existing, error: e0 } = await supabase
     .from("dm_pairs")
     .select("chat_id")
-    .eq("user_a", user_a)
-    .eq("user_b", user_b)
+    .eq("user_a", a)
+    .eq("user_b", b)
     .maybeSingle();
 
   if (e0) throw e0;
@@ -138,11 +168,7 @@ export async function getOrCreateDmChat(otherUserId: string): Promise<string> {
   ]);
   if (e2) throw e2;
 
-  const { error: e3 } = await supabase.from("dm_pairs").insert({
-    user_a,
-    user_b,
-    chat_id: chatId,
-  });
+  const { error: e3 } = await supabase.from("dm_pairs").insert({ user_a: a, user_b: b, chat_id: chatId });
   if (e3) throw e3;
 
   return chatId;
