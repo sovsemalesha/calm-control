@@ -141,15 +141,31 @@ export function ChatPanel({
   const doSaveName = async () => {
     const v = nameDraft.trim();
     if (!v) return;
+
     setSavingName(true);
     setErr(null);
+
+    setMeName(v);
+    setNameDraft(v);
+
     try {
       await setMyFullName(v);
-      const full = await getMyFullName();
-      setMeName(full);
-      setNameDraft(full);
+      try {
+        const full = await getMyFullName();
+        setMeName(full);
+        setNameDraft(full);
+      } catch {
+        // ignore
+      }
     } catch (e: any) {
       setErr(e?.message ?? "Ошибка");
+      try {
+        const full = await getMyFullName();
+        setMeName(full);
+        setNameDraft(full);
+      } catch {
+        // ignore
+      }
     } finally {
       setSavingName(false);
     }
@@ -254,7 +270,8 @@ export function ChatPanel({
           <div style={body}>
             <div style={section}>
               <div style={sectionTitle}>Имя и фамилия</div>
-              <div style={{ display: "flex", gap: 8 }}>
+
+              <div style={row}>
                 <input
                   style={input}
                   value={nameDraft}
@@ -265,12 +282,14 @@ export function ChatPanel({
                   {savingName ? "…" : "Сохранить"}
                 </button>
               </div>
+
               <div style={hint}>Это имя будет отображаться в чате.</div>
             </div>
 
             <div style={section}>
               <div style={sectionTitle}>Добавить контакт по email</div>
-              <div style={{ display: "flex", gap: 8 }}>
+
+              <div style={row}>
                 <input
                   style={input}
                   value={addEmailDraft}
@@ -284,11 +303,12 @@ export function ChatPanel({
                   {addingUser ? "…" : "Добавить"}
                 </button>
               </div>
-              <div style={hint}>Email не показывается публично — используется только для поиска.</div>
+
+              <div style={hint}>Email используется только для поиска.</div>
             </div>
 
             <div style={{ ...section, paddingBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                 <div style={sectionTitle}>Контакты</div>
                 <button type="button" style={miniBtn} onClick={refreshContacts} disabled={loadingContacts}>
                   {loadingContacts ? "…" : "Обновить"}
@@ -303,7 +323,9 @@ export function ChatPanel({
                     <div key={c.id} style={contactRow}>
                       <button type="button" style={contactBtn} onClick={() => openChatWith(c)} title="Открыть чат">
                         <span style={avatar}>{(c.full_name || "U").slice(0, 1).toUpperCase()}</span>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.full_name || "Без имени"}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+                          {c.full_name || "Без имени"}
+                        </span>
                       </button>
                       <button type="button" style={dangerBtn} title="Удалить контакт" onClick={() => doRemoveContact(c.id)}>
                         🗑
@@ -372,8 +394,8 @@ export function ChatPanel({
 const wrap: CSSProperties = { position: "fixed", right: 14, bottom: 14, zIndex: 9999 };
 
 const panel: CSSProperties = {
-  width: 360,
-  height: 520,
+  width: "min(440px, calc(100vw - 28px))",
+  height: "min(580px, calc(100vh - 28px))",
   borderRadius: 18,
   overflow: "hidden",
   background: "var(--cc-bg)",
@@ -381,6 +403,7 @@ const panel: CSSProperties = {
   boxShadow: "0 26px 70px rgba(0,0,0,0.25)",
   display: "flex",
   flexDirection: "column",
+  boxSizing: "border-box",
 };
 
 const top: CSSProperties = {
@@ -391,6 +414,7 @@ const top: CSSProperties = {
   justifyContent: "space-between",
   alignItems: "center",
   gap: 10,
+  boxSizing: "border-box",
 };
 
 const pill: CSSProperties = {
@@ -401,14 +425,15 @@ const pill: CSSProperties = {
   placeItems: "center",
   background: "rgba(255,255,255,0.06)",
   border: "1px solid rgba(255,255,255,0.08)",
+  boxSizing: "border-box",
 };
 
 const topTitle: CSSProperties = { fontSize: 14, fontWeight: 750, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 const topSub: CSSProperties = { marginTop: 2, fontSize: 11, color: "var(--cc-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 
-const body: CSSProperties = { padding: 12, overflow: "auto" };
-const chatBody: CSSProperties = { display: "flex", flexDirection: "column", height: "100%" };
-const messagesBox: CSSProperties = { flex: 1, padding: 12, overflow: "auto" };
+const body: CSSProperties = { padding: 12, overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" };
+const chatBody: CSSProperties = { display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box" };
+const messagesBox: CSSProperties = { flex: 1, padding: 12, overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" };
 
 const composer: CSSProperties = {
   padding: 12,
@@ -416,6 +441,7 @@ const composer: CSSProperties = {
   background: "var(--cc-panel)",
   display: "flex",
   gap: 8,
+  boxSizing: "border-box",
 };
 
 const section: CSSProperties = {
@@ -424,13 +450,17 @@ const section: CSSProperties = {
   border: "1px solid var(--cc-border)",
   background: "rgba(255,255,255,0.02)",
   marginBottom: 10,
+  boxSizing: "border-box",
 };
 
 const sectionTitle: CSSProperties = { fontSize: 12, fontWeight: 750, marginBottom: 8 };
 const hint: CSSProperties = { marginTop: 6, fontSize: 11, color: "var(--cc-muted)" };
 
+const row: CSSProperties = { display: "flex", gap: 8, alignItems: "center", minWidth: 0 };
+
 const input: CSSProperties = {
   flex: 1,
+  minWidth: 0,
   borderRadius: 12,
   border: "1px solid var(--cc-border)",
   background: "var(--cc-bg)",
@@ -438,9 +468,11 @@ const input: CSSProperties = {
   padding: "10px 12px",
   outline: "none",
   fontWeight: 600,
+  boxSizing: "border-box",
 };
 
 const btn: CSSProperties = {
+  flexShrink: 0,
   borderRadius: 12,
   border: "1px solid var(--cc-border)",
   background: "var(--cc-panel)",
@@ -448,10 +480,12 @@ const btn: CSSProperties = {
   padding: "10px 12px",
   cursor: "pointer",
   fontWeight: 800,
-  minWidth: 72,
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
 };
 
 const miniBtn: CSSProperties = {
+  flexShrink: 0,
   borderRadius: 12,
   border: "1px solid var(--cc-border)",
   background: "var(--cc-panel)",
@@ -460,6 +494,8 @@ const miniBtn: CSSProperties = {
   cursor: "pointer",
   fontWeight: 800,
   fontSize: 12,
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
 };
 
 const iconBtn: CSSProperties = {
@@ -471,12 +507,14 @@ const iconBtn: CSSProperties = {
   color: "var(--cc-text)",
   cursor: "pointer",
   fontWeight: 900,
+  boxSizing: "border-box",
 };
 
-const contactRow: CSSProperties = { display: "flex", gap: 8, alignItems: "center" };
+const contactRow: CSSProperties = { display: "flex", gap: 8, alignItems: "center", minWidth: 0 };
 
 const contactBtn: CSSProperties = {
   flex: 1,
+  minWidth: 0,
   borderRadius: 14,
   border: "1px solid var(--cc-border)",
   background: "rgba(255,255,255,0.02)",
@@ -487,7 +525,7 @@ const contactBtn: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  minWidth: 0,
+  boxSizing: "border-box",
 };
 
 const avatar: CSSProperties = {
@@ -500,6 +538,7 @@ const avatar: CSSProperties = {
   background: "rgba(255,255,255,0.06)",
   border: "1px solid rgba(255,255,255,0.08)",
   flexShrink: 0,
+  boxSizing: "border-box",
 };
 
 const dangerBtn: CSSProperties = {
@@ -511,16 +550,18 @@ const dangerBtn: CSSProperties = {
   color: "var(--cc-text)",
   cursor: "pointer",
   fontWeight: 900,
+  boxSizing: "border-box",
 };
 
 const bubble: CSSProperties = {
-  maxWidth: 250,
+  maxWidth: 300,
   padding: "10px 12px",
   borderRadius: 14,
   border: "1px solid var(--cc-border)",
   fontWeight: 650,
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
+  boxSizing: "border-box",
 };
 
 const bubbleMine: CSSProperties = { background: "rgba(59,130,246,0.18)" };
@@ -536,6 +577,7 @@ const errBox: CSSProperties = {
   color: "var(--cc-text)",
   fontSize: 12,
   fontWeight: 650,
+  boxSizing: "border-box",
 };
 
 const logoutBtn: CSSProperties = {
@@ -547,4 +589,5 @@ const logoutBtn: CSSProperties = {
   padding: "10px 12px",
   cursor: "pointer",
   fontWeight: 850,
+  boxSizing: "border-box",
 };
