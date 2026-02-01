@@ -74,11 +74,14 @@ type Ghost = {
   offsetY: number;
 };
 
-// ✅ FIX: ReminderModal ожидает только эти area
-type ReminderArea = "today" | "backlog" | "important";
-function asReminderArea(x: string): ReminderArea {
-  if (x === "today" || x === "backlog" || x === "important") return x;
-  return "today";
+// ReminderModal умеет работать с любыми блоками (кроме "log").
+// Но напоминания могут ссылаться на удалённый блок — в этом случае
+// мягко откатываемся на "today" или первый доступный блок.
+function safeReminderArea(x: string, blocks: Block[]): BlockId {
+  const selectable = blocks.filter((b) => b.id !== "log");
+  if (selectable.some((b) => b.id === x)) return x;
+  if (selectable.some((b) => b.id === "today")) return "today";
+  return selectable[0]?.id ?? "today";
 }
 
 export default function App() {
@@ -568,7 +571,7 @@ export default function App() {
                 id: editingReminder.id,
                 title: editingReminder.title,
                 description: editingReminder.description ?? "",
-                area: asReminderArea(editingReminder.area), // ✅ FIX
+                area: safeReminderArea(editingReminder.area, derived.blocks),
                 date: editingReminder.date,
               }
             : undefined
