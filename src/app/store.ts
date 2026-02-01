@@ -42,6 +42,8 @@ type State = {
     editReminder: (id: string, patch: Partial<Omit<Reminder, "id" | "createdAt">>) => void;
     removeReminder: (id: string) => void;
     deliverDueReminders: () => void;
+
+    setAll: (p: { blocks: Block[]; items: Item[]; reminders: Reminder[]; todayLimit?: number }) => void;
   };
 };
 
@@ -80,6 +82,74 @@ function canEditBlock(id: BlockId) {
   return id === "backlog" || id === "today" || id === "important";
 }
 
+function normalizeBlocks(incoming: Block[]): Block[] {
+  const byId = new Map<string, Block>();
+  for (const b of incoming) byId.set(b.id, b);
+
+  for (const b of BUILTIN) {
+    if (!byId.has(b.id)) byId.set(b.id, b);
+    else {
+      const existing = byId.get(b.id)!;
+      byId.set(b.id, { ...existing, builtIn: true });
+    }
+  }
+
+  const out: Block[] = [];
+  for (const b of byId.values()) {
+    const title = (b.title ?? "").trim();
+    const color = (b.color ?? "rgb(59,130,246)").trim();
+    out.push({
+      id: String(b.id),
+      title: title || String(b.id),
+      color,
+      builtIn: b.builtIn ?? false,
+    });
+  }
+
+  out.sort((a, b) => (a.builtIn === b.builtIn ? 0 : a.builtIn ? -1 : 1));
+  return out;
+}
+
+function normalizeItems(incoming: Item[], blocks: Block[]): Item[] {
+  const blockIds = new Set(blocks.map((b) => b.id));
+  return incoming
+    .map((it) => {
+      const area = blockIds.has(it.area) ? it.area : "backlog";
+      return {
+        ...it,
+        id: String(it.id),
+        area,
+        title: (it.title ?? "").trim(),
+        description: (it.description ?? "").trim(),
+        createdAt: Number(it.createdAt ?? Date.now()),
+        isDone: Boolean(it.isDone),
+        doneAt: it.doneAt === undefined ? null : it.doneAt,
+      } as Item;
+    })
+    .filter((it) => it.title.length > 0)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function normalizeReminders(incoming: Reminder[], blocks: Block[]): Reminder[] {
+  const blockIds = new Set(blocks.map((b) => b.id).filter((x) => x !== "log"));
+  return incoming
+    .map((r) => {
+      const area = blockIds.has(r.area) ? r.area : "today";
+      return {
+        ...r,
+        id: String(r.id),
+        date: String(r.date),
+        area,
+        title: (r.title ?? "").trim(),
+        description: (r.description ?? "").trim(),
+        createdAt: Number(r.createdAt ?? Date.now()),
+        deliveredAt: r.deliveredAt === undefined ? null : r.deliveredAt,
+      } as Reminder;
+    })
+    .filter((r) => r.title.length > 0 && r.date.length > 0)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export const useAppStore = create<State>()(
   persist(
     (set) => {
@@ -97,6 +167,24 @@ export const useAppStore = create<State>()(
         derived: recompute(initialBlocks, initialItems, initialTodayLimit),
 
         actions: {
+          setAll: ({ blocks, items, reminders, todayLimit }) => {
+            set((s) => {
+              const nextBlocks = normalizeBlocks(blocks ?? []);
+              const nextItems = normalizeItems(items ?? [], nextBlocks);
+              const nextReminders = normalizeReminders(reminders ?? [], nextBlocks);
+              const nextTodayLimit = typeof todayLimit === "number" ? todayLimit : s.todayLimit;
+
+              return {
+                ...s,
+                blocks: nextBlocks,
+                items: nextItems,
+                reminders: nextReminders,
+                todayLimit: nextTodayLimit,
+                derived: recompute(nextBlocks, nextItems, nextTodayLimit),
+              };
+            });
+          },
+
           addItem: ({ title, description, area }) => {
             const t = title.trim();
             if (!t) return;

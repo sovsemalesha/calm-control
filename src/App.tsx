@@ -11,6 +11,7 @@ import { ReminderModal } from "./components/ReminderModal";
 import { TomorrowModal } from "./components/TomorrowModal";
 import { HistoryModal } from "./components/HistoryModal";
 import AddItemModal from "./components/AddItemModal";
+import { AuthGate } from "./components/AuthGate";
 
 type ThemeMode = "light" | "dark";
 const THEME_KEY = "cc_theme";
@@ -402,189 +403,191 @@ export default function App() {
   };
 
   return (
-    <Layout theme={theme}>
-      <TopBar
-        subtitle={subtitle}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onAddBlock={openCreateBlock}
-        selectedDay={selectedDay}
-        onSelectDay={(d) => setSelectedDay(d)}
-        onAddReminderForSelectedDay={() => {
-          setEditingReminder(null);
-          setRemModalMode("create");
-          setRemModalOpen(true);
-        }}
-        remindersByDay={remindersByDay}
-        blockById={derived.blockById}
-        tomorrowText={tomorrowText}
-        onTomorrowToggle={() => setTomorrowOpen((v) => !v)}
-        calendarOpen={calendarOpen}
-        setCalendarOpen={setCalendarOpen}
-        onOpenHistory={() => setHistoryOpen(true)}
-        onRemoveReminder={actions.removeReminder}
-        onEditReminder={openEditReminder}
-      />
-
-      <div style={gridStyle}>
-        {blocksToShow.map((b) => {
-          const items = derived.itemsByArea[b.id] ?? [];
-          const canManage = canManageBlock(b);
-
-          return (
-            <div
-              key={b.id}
-              data-cc-block-id={b.id}
-              onMouseEnter={() => setFocusSafe(b.id)}
-              onMouseLeave={() => setFocusSafe(null)}
-              style={{ ...shellStyleBase, ...panelStyle(b.id) }}
-            >
-              <Column
-                title={b.title}
-                items={items}
-                emptyText="Пусто."
-                area={b.id}
-                dotColor={b.color}
-                canManage={canManage}
-                onAddItem={() => openAddForBlock(b.id)}
-                onRenameBlock={() => openRenameBlock(b.id)}
-                onDeleteBlock={() => deleteBlock(b)}
-                onStartBlockDrag={(e) => startBlockDrag(e, b.id)}
-                isBlockDragging={dragBlockId === b.id}
-                onDragEnterArea={onDragEnterArea}
-                onDragLeaveArea={onDragLeaveArea}
-                onDragStateChange={onDragStateChange}
-                onOpenItem={openItem}
-                actions={{
-                  dropItemToArea: actions.dropItemToArea,
-                  toggleDone: actions.toggleDone,
-                  editItem: actions.editItem,
-                  removeItem: actions.removeItem,
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      {ghost && ghostBlock && (
-        <div
-          style={{
-            position: "fixed",
-            left: ghost.x,
-            top: ghost.y,
-            width: ghost.w,
-            height: ghost.h,
-            zIndex: 9999,
-            pointerEvents: "none",
-            transform: "rotate(-0.8deg) scale(1.02)",
-            boxShadow: "0 26px 70px rgba(0,0,0,0.25)",
-            borderRadius: 18,
-            overflow: "hidden",
-            background: "var(--cc-bg)",
-            border: "1px solid var(--cc-border)",
+    <AuthGate>
+      <Layout theme={theme}>
+        <TopBar
+          subtitle={subtitle}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onAddBlock={openCreateBlock}
+          selectedDay={selectedDay}
+          onSelectDay={(d) => setSelectedDay(d)}
+          onAddReminderForSelectedDay={() => {
+            setEditingReminder(null);
+            setRemModalMode("create");
+            setRemModalOpen(true);
           }}
-        >
+          remindersByDay={remindersByDay}
+          blockById={derived.blockById}
+          tomorrowText={tomorrowText}
+          onTomorrowToggle={() => setTomorrowOpen((v) => !v)}
+          calendarOpen={calendarOpen}
+          setCalendarOpen={setCalendarOpen}
+          onOpenHistory={() => setHistoryOpen(true)}
+          onRemoveReminder={actions.removeReminder}
+          onEditReminder={openEditReminder}
+        />
+
+        <div style={gridStyle}>
+          {blocksToShow.map((b) => {
+            const items = derived.itemsByArea[b.id] ?? [];
+            const canManage = canManageBlock(b);
+
+            return (
+              <div
+                key={b.id}
+                data-cc-block-id={b.id}
+                onMouseEnter={() => setFocusSafe(b.id)}
+                onMouseLeave={() => setFocusSafe(null)}
+                style={{ ...shellStyleBase, ...panelStyle(b.id) }}
+              >
+                <Column
+                  title={b.title}
+                  items={items}
+                  emptyText="Пусто."
+                  area={b.id}
+                  dotColor={b.color}
+                  canManage={canManage}
+                  onAddItem={() => openAddForBlock(b.id)}
+                  onRenameBlock={() => openRenameBlock(b.id)}
+                  onDeleteBlock={() => deleteBlock(b)}
+                  onStartBlockDrag={(e) => startBlockDrag(e, b.id)}
+                  isBlockDragging={dragBlockId === b.id}
+                  onDragEnterArea={onDragEnterArea}
+                  onDragLeaveArea={onDragLeaveArea}
+                  onDragStateChange={onDragStateChange}
+                  onOpenItem={openItem}
+                  actions={{
+                    dropItemToArea: actions.dropItemToArea,
+                    toggleDone: actions.toggleDone,
+                    editItem: actions.editItem,
+                    removeItem: actions.removeItem,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {ghost && ghostBlock && (
           <div
             style={{
-              padding: "10px 12px",
-              background: "var(--cc-panel)",
-              borderBottom: "1px solid var(--cc-border)",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              fontWeight: 650,
+              position: "fixed",
+              left: ghost.x,
+              top: ghost.y,
+              width: ghost.w,
+              height: ghost.h,
+              zIndex: 9999,
+              pointerEvents: "none",
+              transform: "rotate(-0.8deg) scale(1.02)",
+              boxShadow: "0 26px 70px rgba(0,0,0,0.25)",
+              borderRadius: 18,
+              overflow: "hidden",
+              background: "var(--cc-bg)",
+              border: "1px solid var(--cc-border)",
             }}
           >
-            <span style={{ width: 10, height: 10, borderRadius: 999, background: ghostBlock.color }} />
-            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghostBlock.title}</div>
+            <div
+              style={{
+                padding: "10px 12px",
+                background: "var(--cc-panel)",
+                borderBottom: "1px solid var(--cc-border)",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontWeight: 650,
+              }}
+            >
+              <span style={{ width: 10, height: 10, borderRadius: 999, background: ghostBlock.color }} />
+              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghostBlock.title}</div>
+            </div>
+            <div style={{ padding: 12, color: "var(--cc-muted)", fontSize: 12 }}>Перемещение…</div>
           </div>
-          <div style={{ padding: 12, color: "var(--cc-muted)", fontSize: 12 }}>Перемещение…</div>
-        </div>
-      )}
+        )}
 
-      <AddItemModal
-        open={addItemOpen}
-        blockTitle={derived.blockById[addItemArea]?.title ?? "Блок"}
-        blockColor={derived.blockById[addItemArea]?.color ?? "rgb(59,130,246)"}
-        onClose={() => setAddItemOpen(false)}
-        onSubmit={(p: { title: string; description: string }) => {
-          actions.addItem({ area: addItemArea, title: p.title, description: p.description });
-        }}
-      />
+        <AddItemModal
+          open={addItemOpen}
+          blockTitle={derived.blockById[addItemArea]?.title ?? "Блок"}
+          blockColor={derived.blockById[addItemArea]?.color ?? "rgb(59,130,246)"}
+          onClose={() => setAddItemOpen(false)}
+          onSubmit={(p: { title: string; description: string }) => {
+            actions.addItem({ area: addItemArea, title: p.title, description: p.description });
+          }}
+        />
 
-      <TomorrowModal
-        open={tomorrowOpen}
-        title="Завтра"
-        dateKey={tomorrowKey}
-        reminders={tomorrowList}
-        blockById={derived.blockById}
-        onClose={() => setTomorrowOpen(false)}
-        onAdd={openCreateReminderForTomorrow}
-        onEdit={(r) => {
-          setSelectedDay(r.date);
-          setTomorrowOpen(false);
-          openEditReminder(r);
-        }}
-        onRemove={actions.removeReminder}
-      />
+        <TomorrowModal
+          open={tomorrowOpen}
+          title="Завтра"
+          dateKey={tomorrowKey}
+          reminders={tomorrowList}
+          blockById={derived.blockById}
+          onClose={() => setTomorrowOpen(false)}
+          onAdd={openCreateReminderForTomorrow}
+          onEdit={(r) => {
+            setSelectedDay(r.date);
+            setTomorrowOpen(false);
+            openEditReminder(r);
+          }}
+          onRemove={actions.removeReminder}
+        />
 
-      <HistoryModal
-        open={historyOpen}
-        items={logItems}
-        blockById={derived.blockById}
-        onClose={() => setHistoryOpen(false)}
-        onRemoveItem={actions.removeItem}
-      />
+        <HistoryModal
+          open={historyOpen}
+          items={logItems}
+          blockById={derived.blockById}
+          onClose={() => setHistoryOpen(false)}
+          onRemoveItem={actions.removeItem}
+        />
 
-      <TaskModal
-        open={!!modalItemId}
-        item={modalItem}
-        startInEdit={modalMode === "edit"}
-        dotColor={modalDotColor}
-        onClose={() => setModalItemId(null)}
-        onToggleDone={actions.toggleDone}
-        onEdit={actions.editItem}
-        onRemove={actions.removeItem}
-      />
+        <TaskModal
+          open={!!modalItemId}
+          item={modalItem}
+          startInEdit={modalMode === "edit"}
+          dotColor={modalDotColor}
+          onClose={() => setModalItemId(null)}
+          onToggleDone={actions.toggleDone}
+          onEdit={actions.editItem}
+          onRemove={actions.removeItem}
+        />
 
-      <CreateBlockModal
-        open={blockModalOpen}
-        mode={blockModalMode}
-        initialTitle={blockModalMode === "edit" ? editingBlock?.title ?? "" : ""}
-        initialColor={blockModalMode === "edit" ? editingBlock?.color ?? "rgb(59,130,246)" : "rgb(59,130,246)"}
-        onClose={() => setBlockModalOpen(false)}
-        onSubmit={(payload) => {
-          submitBlock(payload);
-          setBlockModalOpen(false);
-        }}
-      />
+        <CreateBlockModal
+          open={blockModalOpen}
+          mode={blockModalMode}
+          initialTitle={blockModalMode === "edit" ? editingBlock?.title ?? "" : ""}
+          initialColor={blockModalMode === "edit" ? editingBlock?.color ?? "rgb(59,130,246)" : "rgb(59,130,246)"}
+          onClose={() => setBlockModalOpen(false)}
+          onSubmit={(payload) => {
+            submitBlock(payload);
+            setBlockModalOpen(false);
+          }}
+        />
 
-      <ReminderModal
-        open={remModalOpen}
-        date={selectedDay}
-        mode={remModalMode}
-        blocks={derived.blocks}
-        initial={
-          editingReminder
-            ? {
-                id: editingReminder.id,
-                title: editingReminder.title,
-                description: editingReminder.description ?? "",
-                area: safeReminderArea(editingReminder.area, derived.blocks),
-                date: editingReminder.date,
-              }
-            : undefined
-        }
-        onClose={() => setRemModalOpen(false)}
-        onSubmit={(p) => {
-          if (p.id) {
-            actions.editReminder(p.id, { title: p.title, description: p.description, area: p.area, date: p.date });
-          } else {
-            actions.addReminder({ date: p.date, area: p.area, title: p.title, description: p.description });
+        <ReminderModal
+          open={remModalOpen}
+          date={selectedDay}
+          mode={remModalMode}
+          blocks={derived.blocks}
+          initial={
+            editingReminder
+              ? {
+                  id: editingReminder.id,
+                  title: editingReminder.title,
+                  description: editingReminder.description ?? "",
+                  area: safeReminderArea(editingReminder.area, derived.blocks),
+                  date: editingReminder.date,
+                }
+              : undefined
           }
-        }}
-      />
-    </Layout>
+          onClose={() => setRemModalOpen(false)}
+          onSubmit={(p) => {
+            if (p.id) {
+              actions.editReminder(p.id, { title: p.title, description: p.description, area: p.area, date: p.date });
+            } else {
+              actions.addReminder({ date: p.date, area: p.area, title: p.title, description: p.description });
+            }
+          }}
+        />
+      </Layout>
+    </AuthGate>
   );
 }
