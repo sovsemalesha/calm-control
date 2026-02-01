@@ -1,16 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { Block, Reminder } from "../app/types";
 import { CalendarPopover } from "./CalendarPopover";
-
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-function formatNow(d: Date) {
-  return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}  ${pad2(d.getHours())}:${pad2(
-    d.getMinutes()
-  )}`;
-}
 
 export function TopBar({
   subtitle,
@@ -59,14 +50,6 @@ export function TopBar({
   onRemoveReminder: (id: string) => void;
   onEditReminder: (rem: Reminder) => void;
 }) {
-  const [nowStr, setNowStr] = useState(() => formatNow(new Date()));
-  useEffect(() => {
-    const tick = () => setNowStr(formatNow(new Date()));
-    tick();
-    const id = window.setInterval(tick, 30_000);
-    return () => window.clearInterval(id);
-  }, []);
-
   const tomorrowStrong = useMemo(() => tomorrowText, [tomorrowText]);
 
   // outside click — считаем “внутри” и кнопку даты, и сам календарь
@@ -105,8 +88,14 @@ export function TopBar({
         </button>
 
         <div ref={calWrapRef} style={{ position: "relative" }}>
-          <button style={btn} onClick={() => setCalendarOpen(!calendarOpen)} title="Открыть/закрыть календарь">
-            {nowStr}
+          <button
+            style={calBtn}
+            onClick={() => setCalendarOpen(!calendarOpen)}
+            title="Открыть/закрыть календарь"
+            aria-label="Календарь"
+            type="button"
+          >
+            📅
           </button>
 
           <CalendarPopover
@@ -163,6 +152,16 @@ const btn: CSSProperties = {
   padding: "10px 12px",
   cursor: "pointer",
   fontWeight: 600,
+};
+
+const calBtn: CSSProperties = {
+  ...btn,
+  width: 42,
+  height: 40,
+  padding: 0,
+  display: "grid",
+  placeItems: "center",
+  fontSize: 18,
 };
 
 const tomorrowBtn: CSSProperties = {

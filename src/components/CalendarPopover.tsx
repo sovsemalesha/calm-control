@@ -43,6 +43,11 @@ export function CalendarPopover({
   onRemoveReminder: (id: string) => void;
   onEditReminder: (rem: Reminder) => void;
 }) {
+  const todayKey = useMemo(() => {
+    const n = new Date();
+    return dateKey(n.getFullYear(), n.getMonth(), n.getDate());
+  }, []);
+
   // Esc закрывает
   useEffect(() => {
     if (!open) return;
@@ -201,9 +206,14 @@ export function CalendarPopover({
 
               const key = dateKey(cursorY, cursorM0, d);
               const isSel = key === selected;
+              const isToday = key === todayKey;
 
               const rems = remindersByDay[key] ?? [];
               const dayColor = pickDayColor(rems, blockById);
+
+              const shadows: string[] = [];
+              if (isToday) shadows.push("0 0 0 2px rgba(16,185,129,0.75)");
+              if (dayColor) shadows.push(`0 0 0 2px ${dayColor} inset`);
 
               return (
                 <button
@@ -212,7 +222,7 @@ export function CalendarPopover({
                   style={{
                     ...cellBtn,
                     ...(isSel ? cellBtnActive : null),
-                    ...(dayColor ? { boxShadow: `0 0 0 2px ${dayColor} inset` } : null),
+                    ...(shadows.length ? { boxShadow: shadows.join(", ") } : null),
                   }}
                   onClick={() => onSelectDay(key)}
                   title={rems.length ? `Событий: ${rems.length}` : "Пусто"}
