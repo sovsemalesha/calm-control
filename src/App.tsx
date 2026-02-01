@@ -86,6 +86,39 @@ function safeReminderArea(x: string, blocks: Block[]): BlockId {
   return selectable[0]?.id ?? "today";
 }
 
+function AddBlockCard({
+  onClick,
+  active,
+  onHover,
+}: {
+  onClick: () => void;
+  active: boolean;
+  onHover: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Создать новый блок"
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onFocus={() => onHover(true)}
+      onBlur={() => onHover(false)}
+      style={{
+        ...addBlockCard,
+        background: "rgba(255,255,255,0.03)",
+        transform: active ? "translateY(-1px)" : "translateY(0)",
+        borderColor: active ? "rgba(255,255,255,0.22)" : "var(--cc-border)",
+      }}
+    >
+      <div style={addBlockInner}>
+        <div style={addBlockPlus}>＋</div>
+        <div style={addBlockText}>Добавить блок</div>
+      </div>
+    </button>
+  );
+}
+
 export default function App() {
   const store = useAppStore();
   const { actions, derived, reminders } = store;
@@ -126,6 +159,9 @@ export default function App() {
   // ✅ модалка добавления задачи в конкретный блок
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [addItemArea, setAddItemArea] = useState<BlockId>("today");
+
+  // ✅ hover для "добавить блок"
+  const [addBlockHover, setAddBlockHover] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(THEME_KEY, theme);
@@ -177,6 +213,16 @@ export default function App() {
     outline: dropBlockId === id ? "2px solid var(--cc-border)" : "2px solid transparent",
     outlineOffset: -2,
     opacity: dragBlockId === id ? 0.35 : 1,
+  });
+
+  // ✅ эффекты как у созданных блоков — для "добавить блок"
+  const addPanelStyle = (active: boolean): CSSProperties => ({
+    borderRadius: 18,
+    transition: "box-shadow 180ms ease, transform 120ms ease, outline-color 120ms ease, opacity 120ms ease",
+    boxShadow: active ? "0 18px 44px var(--cc-shadow)" : "0 0 0 rgba(0,0,0,0)",
+    transform: active ? "scale(1.01)" : "scale(1)",
+    outline: active ? "2px solid var(--cc-border)" : "2px solid transparent",
+    outlineOffset: -2,
   });
 
   const setFocusSafe = (next: BlockId | null) => {
@@ -410,7 +456,6 @@ export default function App() {
           subtitle={subtitle}
           theme={theme}
           onToggleTheme={toggleTheme}
-          onAddBlock={openCreateBlock}
           selectedDay={selectedDay}
           onSelectDay={(d) => setSelectedDay(d)}
           onAddReminderForSelectedDay={() => {
@@ -469,6 +514,18 @@ export default function App() {
               </div>
             );
           })}
+
+          {/* ✅ "Добавить блок" — эффекты как у созданного блока, высота меньше */}
+          <div style={{ ...shellStyleBase, ...addPanelStyle(addBlockHover), maxHeight: "70vh" }}>
+            <AddBlockCard
+              onClick={() => {
+                setAddBlockHover(false);
+                openCreateBlock();
+              }}
+              active={addBlockHover}
+              onHover={setAddBlockHover}
+            />
+          </div>
         </div>
 
         {ghost && ghostBlock && (
@@ -593,3 +650,45 @@ export default function App() {
     </AuthGate>
   );
 }
+
+const addBlockCard: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  minHeight: 190, // ✅ еще чуть меньше (только высота)
+  borderRadius: 18,
+  border: "1.5px dashed var(--cc-border)",
+  background: "rgba(255,255,255,0.03)",
+  color: "var(--cc-text)",
+  cursor: "pointer",
+  display: "grid",
+  placeItems: "center",
+  padding: 16,
+  transition: "transform 120ms ease, background 120ms ease, border-color 120ms ease",
+};
+
+const addBlockInner: CSSProperties = {
+  display: "grid",
+  placeItems: "center",
+  gap: 10,
+};
+
+const addBlockPlus: CSSProperties = {
+  width: 66,
+  height: 66,
+  borderRadius: 18,
+  display: "grid",
+  placeItems: "center",
+  fontSize: 42,
+  lineHeight: 1,
+  fontWeight: 700,
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const addBlockText: CSSProperties = {
+  marginTop: 10,
+  fontSize: 12,
+  color: "var(--cc-muted)",
+  fontWeight: 650,
+  letterSpacing: 0.2,
+};

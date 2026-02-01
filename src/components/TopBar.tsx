@@ -8,7 +8,6 @@ export function TopBar({
   subtitle,
   theme,
   onToggleTheme,
-  onAddBlock,
 
   selectedDay,
   onSelectDay,
@@ -28,14 +27,12 @@ export function TopBar({
   onRemoveReminder,
   onEditReminder,
 
-  // ✅ NEW
   onSignOut,
   showInstall = true,
 }: {
   subtitle: string;
   theme: "light" | "dark";
   onToggleTheme: () => void;
-  onAddBlock: () => void;
 
   selectedDay: string;
   onSelectDay: (date: string) => void;
@@ -129,18 +126,12 @@ export function TopBar({
           История
         </button>
 
-        <button style={btn} onClick={onAddBlock} title="Создать блок">
-          + Блок
-        </button>
-
         <button style={btn} onClick={onToggleTheme} title="Тема">
           {theme === "dark" ? "☾" : "☀"}
         </button>
 
-        {/* ✅ PWA install (внутри PWA она и так не показывается) */}
         {showInstall ? <InstallPWAButton /> : null}
 
-        {/* ✅ Sign out */}
         <button style={btn} onClick={onSignOut} title="Выйти из аккаунта">
           Выйти
         </button>
