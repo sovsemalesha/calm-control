@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../app/supabase";
 import { startCloudSync, stopCloudSync } from "../app/cloudSync";
+import { InstallPWAButton } from "./InstallPWAButton";
 
 type Props = { children: React.ReactNode };
 
@@ -37,17 +38,13 @@ export function AuthGate({ children }: Props) {
     };
   }, []);
 
-  // ✅ запуск/остановка облачной синхронизации
   useEffect(() => {
     if (!session) {
       stopCloudSync();
       return;
     }
     startCloudSync(session);
-    return () => {
-      // при размонтировании — стоп
-      stopCloudSync();
-    };
+    return () => stopCloudSync();
   }, [session]);
 
   if (loading) return <div style={{ padding: 16 }}>Loading…</div>;
@@ -55,8 +52,8 @@ export function AuthGate({ children }: Props) {
 
   return (
     <>
-      {/* Кнопка выхода всегда доступна */}
-      <div style={{ position: "fixed", right: 12, top: 12, zIndex: 99999 }}>
+      <div style={{ position: "fixed", right: 12, top: 12, zIndex: 99999, display: "flex", gap: 8 }}>
+        <InstallPWAButton />
         <button
           onClick={() => supabase.auth.signOut()}
           style={{
@@ -67,6 +64,7 @@ export function AuthGate({ children }: Props) {
             color: "white",
             cursor: "pointer",
           }}
+          type="button"
         >
           Выйти
         </button>

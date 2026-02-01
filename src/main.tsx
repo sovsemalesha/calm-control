@@ -3,10 +3,13 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-const el = document.getElementById("root");
-if (!el) throw new Error("Root element #root not found in index.html");
+import { registerSW } from "virtual:pwa-register";
 
-ReactDOM.createRoot(el).render(
+registerSW({
+  immediate: true,
+});
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
