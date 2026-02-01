@@ -13,6 +13,8 @@ import { HistoryModal } from "./components/HistoryModal";
 import AddItemModal from "./components/AddItemModal";
 import { AuthGate } from "./components/AuthGate";
 import { supabase } from "./app/supabase";
+import { ChatFab } from "./components/ChatFab";
+import { ChatPanel } from "./components/ChatPanel";
 
 type ThemeMode = "light" | "dark";
 const THEME_KEY = "cc_theme";
@@ -163,6 +165,9 @@ export default function App() {
   // ✅ hover для "добавить блок"
   const [addBlockHover, setAddBlockHover] = useState(false);
 
+  // ✅ чат-панель
+  const [chatOpen, setChatOpen] = useState(false);
+
   useEffect(() => {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
@@ -230,14 +235,6 @@ export default function App() {
     pendingScrollYRef.current = window.scrollY;
     setFocus(next);
   };
-
-  const onDragEnterArea = (id: BlockId) => setDragOver(id);
-  const onDragLeaveArea = (id: BlockId) => setDragOver((cur) => (cur === id ? null : cur));
-  const onDragStateChange = (v: boolean) => {
-    setIsDraggingTask(v);
-    if (!v) setDragOver(null);
-  };
-
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   const openItem = (id: string, mode: "view" | "edit" = "view") => {
@@ -245,10 +242,7 @@ export default function App() {
     setModalMode(mode);
   };
 
-  const blocksToShowUnsorted: Block[] = useMemo(
-    () => derived.blocks.filter((b) => b.id !== "log"),
-    [derived.blocks]
-  );
+  const blocksToShowUnsorted: Block[] = useMemo(() => derived.blocks.filter((b) => b.id !== "log"), [derived.blocks]);
 
   const blocksToShow: Block[] = useMemo(() => {
     const byId = new Map<string, Block>();
@@ -500,9 +494,12 @@ export default function App() {
                   onDeleteBlock={() => deleteBlock(b)}
                   onStartBlockDrag={(e) => startBlockDrag(e, b.id)}
                   isBlockDragging={dragBlockId === b.id}
-                  onDragEnterArea={onDragEnterArea}
-                  onDragLeaveArea={onDragLeaveArea}
-                  onDragStateChange={onDragStateChange}
+                  onDragEnterArea={() => setDragOver(b.id)}
+                  onDragLeaveArea={() => setDragOver((cur) => (cur === b.id ? null : cur))}
+                  onDragStateChange={(v) => {
+                    setIsDraggingTask(v);
+                    if (!v) setDragOver(null);
+                  }}
                   onOpenItem={openItem}
                   actions={{
                     dropItemToArea: actions.dropItemToArea,
@@ -515,7 +512,6 @@ export default function App() {
             );
           })}
 
-          {/* ✅ "Добавить блок" — эффекты как у созданного блока, высота меньше */}
           <div style={{ ...shellStyleBase, ...addPanelStyle(addBlockHover), maxHeight: "70vh" }}>
             <AddBlockCard
               onClick={() => {
@@ -646,6 +642,10 @@ export default function App() {
             }
           }}
         />
+
+        {/* ✅ FAB + панель */}
+        <ChatFab open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
+        <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
       </Layout>
     </AuthGate>
   );
@@ -654,7 +654,7 @@ export default function App() {
 const addBlockCard: CSSProperties = {
   width: "100%",
   height: "100%",
-  minHeight: 190, // ✅ еще чуть меньше (только высота)
+  minHeight: 190,
   borderRadius: 18,
   border: "1.5px dashed var(--cc-border)",
   background: "rgba(255,255,255,0.03)",
