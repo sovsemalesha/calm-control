@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { supabase } from "../app/supabase";
 import { startCloudSync, stopCloudSync } from "../app/cloudSync";
-import { InstallPWAButton } from "./InstallPWAButton";
 
 type Props = { children: React.ReactNode };
 
@@ -50,29 +49,7 @@ export function AuthGate({ children }: Props) {
   if (loading) return <div style={{ padding: 16 }}>Loading…</div>;
   if (!session) return <AuthScreen />;
 
-  return (
-    <>
-      <div style={{ position: "fixed", right: 12, top: 12, zIndex: 99999, display: "flex", gap: 8 }}>
-        <InstallPWAButton />
-        <button
-          onClick={() => supabase.auth.signOut()}
-          style={{
-            padding: "8px 10px",
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.18)",
-            background: "rgba(0,0,0,0.35)",
-            color: "white",
-            cursor: "pointer",
-          }}
-          type="button"
-        >
-          Выйти
-        </button>
-      </div>
-
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
 
 function AuthScreen() {

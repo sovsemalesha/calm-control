@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import type { Block, Reminder } from "../app/types";
 import { CalendarPopover } from "./CalendarPopover";
+import { InstallPWAButton } from "./InstallPWAButton";
 
 export function TopBar({
   subtitle,
@@ -26,6 +27,10 @@ export function TopBar({
 
   onRemoveReminder,
   onEditReminder,
+
+  // ✅ NEW
+  onSignOut,
+  showInstall = true,
 }: {
   subtitle: string;
   theme: "light" | "dark";
@@ -49,6 +54,9 @@ export function TopBar({
 
   onRemoveReminder: (id: string) => void;
   onEditReminder: (rem: Reminder) => void;
+
+  onSignOut: () => void;
+  showInstall?: boolean;
 }) {
   const tomorrowStrong = useMemo(() => tomorrowText, [tomorrowText]);
 
@@ -82,7 +90,7 @@ export function TopBar({
         <div style={sub}>{subtitle}</div>
       </div>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+      <div style={right}>
         <button style={tomorrowBtn} title="Открыть/закрыть окно «Завтра»" onClick={onTomorrowToggle}>
           {tomorrowStrong}
         </button>
@@ -128,6 +136,14 @@ export function TopBar({
         <button style={btn} onClick={onToggleTheme} title="Тема">
           {theme === "dark" ? "☾" : "☀"}
         </button>
+
+        {/* ✅ PWA install (внутри PWA она и так не показывается) */}
+        {showInstall ? <InstallPWAButton /> : null}
+
+        {/* ✅ Sign out */}
+        <button style={btn} onClick={onSignOut} title="Выйти из аккаунта">
+          Выйти
+        </button>
       </div>
     </div>
   );
@@ -139,6 +155,14 @@ const bar: CSSProperties = {
   alignItems: "center",
   gap: 12,
   marginBottom: 10,
+};
+
+const right: CSSProperties = {
+  display: "flex",
+  gap: 12,
+  alignItems: "center",
+  flexWrap: "wrap",
+  justifyContent: "flex-end",
 };
 
 const title: CSSProperties = { fontSize: 18, fontWeight: 650 };

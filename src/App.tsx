@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAppStore, todayKeyLocal } from "./app/store";
 import type { Block, BlockId, Item, Reminder } from "./app/types";
 import { Layout } from "./components/Layout";
@@ -12,6 +12,7 @@ import { TomorrowModal } from "./components/TomorrowModal";
 import { HistoryModal } from "./components/HistoryModal";
 import AddItemModal from "./components/AddItemModal";
 import { AuthGate } from "./components/AuthGate";
+import { supabase } from "./app/supabase";
 
 type ThemeMode = "light" | "dark";
 const THEME_KEY = "cc_theme";
@@ -426,6 +427,7 @@ export default function App() {
           onOpenHistory={() => setHistoryOpen(true)}
           onRemoveReminder={actions.removeReminder}
           onEditReminder={openEditReminder}
+          onSignOut={() => supabase.auth.signOut()}
         />
 
         <div style={gridStyle}>

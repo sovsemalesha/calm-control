@@ -11,39 +11,53 @@ declare global {
   }
 }
 
+function isStandalone() {
+  // Android/Chrome: display-mode
+  if (window.matchMedia("(display-mode: standalone)").matches) return true;
+
+  // iOS Safari: navigator.standalone
+  const anyNav = navigator as any;
+  if (anyNav?.standalone) return true;
+
+  return false;
+}
+
 export function InstallPWAButton() {
+  // ✅ В установленном приложении кнопку никогда не показываем
+  const [standalone, setStandalone] = useState(() => isStandalone());
+
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     () => window.__cc_deferredPWA ?? null
   );
-  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    const updateFromGlobal = () => {
+    const onAvailable = () => {
+      setStandalone(isStandalone());
       setDeferred(window.__cc_deferredPWA ?? null);
     };
 
-    const onAvailable = () => updateFromGlobal();
     const onInstalled = () => {
-      setInstalled(true);
+      window.__cc_deferredPWA = null;
+      setStandalone(true);
       setDeferred(null);
     };
-
-    // если уже запущено как PWA — кнопку не показываем
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setInstalled(true);
-      setDeferred(null);
-    }
 
     window.addEventListener("cc:pwa-available", onAvailable);
     window.addEventListener("cc:pwa-installed", onInstalled);
 
+    // на всякий случай: если режим поменялся
+    const mm = window.matchMedia("(display-mode: standalone)");
+    const onMM = () => setStandalone(isStandalone());
+    mm.addEventListener?.("change", onMM);
+
     return () => {
       window.removeEventListener("cc:pwa-available", onAvailable);
       window.removeEventListener("cc:pwa-installed", onInstalled);
+      mm.removeEventListener?.("change", onMM);
     };
   }, []);
 
-  if (installed) return null;
+  if (standalone) return null;
   if (!deferred) return null;
 
   return (
@@ -52,7 +66,6 @@ export function InstallPWAButton() {
         await deferred.prompt();
         const choice = await deferred.userChoice;
 
-        // если приняли — браузер сам покажет установку; мы убираем кнопку
         if (choice.outcome === "accepted") {
           window.__cc_deferredPWA = null;
           setDeferred(null);
