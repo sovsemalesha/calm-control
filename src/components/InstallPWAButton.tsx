@@ -5,32 +5,41 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+declare global {
+  interface Window {
+    __cc_deferredPWA?: BeforeInstallPromptEvent | null;
+  }
+}
+
 export function InstallPWAButton() {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
+    () => window.__cc_deferredPWA ?? null
+  );
   const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    const onBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
+    const updateFromGlobal = () => {
+      setDeferred(window.__cc_deferredPWA ?? null);
     };
 
+    const onAvailable = () => updateFromGlobal();
     const onInstalled = () => {
       setInstalled(true);
       setDeferred(null);
     };
 
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    window.addEventListener("appinstalled", onInstalled);
-
-    // если уже запущено как PWA
+    // если уже запущено как PWA — кнопку не показываем
     if (window.matchMedia("(display-mode: standalone)").matches) {
       setInstalled(true);
+      setDeferred(null);
     }
 
+    window.addEventListener("cc:pwa-available", onAvailable);
+    window.addEventListener("cc:pwa-installed", onInstalled);
+
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-      window.removeEventListener("appinstalled", onInstalled);
+      window.removeEventListener("cc:pwa-available", onAvailable);
+      window.removeEventListener("cc:pwa-installed", onInstalled);
     };
   }, []);
 
@@ -42,7 +51,10 @@ export function InstallPWAButton() {
       onClick={async () => {
         await deferred.prompt();
         const choice = await deferred.userChoice;
+
+        // если приняли — браузер сам покажет установку; мы убираем кнопку
         if (choice.outcome === "accepted") {
+          window.__cc_deferredPWA = null;
           setDeferred(null);
         }
       }}
