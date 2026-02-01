@@ -299,21 +299,44 @@ export const useAppStore = create<State>()(
             });
           },
 
+          // ✅ FIX: если напоминание на сегодня/прошлое — сразу создаём Item и помечаем deliveredAt
           addReminder: ({ date, area, title, description }) => {
             const t = title.trim();
             if (!t) return;
 
             set((s) => {
+              const now = Date.now();
+
+              const shouldDeliverNow = date <= todayKeyLocal();
+
               const r: Reminder = {
                 id: uid("rem"),
                 date,
                 area,
                 title: t,
                 description: (description ?? "").trim(),
-                createdAt: Date.now(),
-                deliveredAt: null,
+                createdAt: now,
+                deliveredAt: shouldDeliverNow ? now : null,
               };
-              return { ...s, reminders: [r, ...s.reminders] };
+
+              if (!shouldDeliverNow) {
+                return { ...s, reminders: [r, ...s.reminders] };
+              }
+
+              const it: Item = {
+                id: uid("item"),
+                area: r.area,
+                title: r.title,
+                description: r.description ?? "",
+                createdAt: now,
+                isDone: false,
+                doneAt: null,
+              };
+
+              const items = [it, ...s.items];
+              const reminders = [r, ...s.reminders];
+
+              return { ...s, reminders, items, derived: recompute(s.blocks, items, s.todayLimit) };
             });
           },
 
@@ -351,6 +374,8 @@ export const useAppStore = create<State>()(
 
                 return { ...r, deliveredAt: now };
               });
+
+              if (newItems.length === 0) return s;
 
               const items = [...newItems, ...s.items];
               return { ...s, reminders, items, derived: recompute(s.blocks, items, s.todayLimit) };
